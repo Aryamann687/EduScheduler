@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>EduScheduler</title>
+  <style>
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 10px;
+      text-align: center;
+    }
+    th {
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>EduScheduler – Input</h2>
+
+  <label>Subjects (comma separated)</label><br>
+  <input id="subjects" placeholder="Math,Physics,CS,Chemistry"><br><br>
+
+  <label>Periods per day</label><br>
+  <input id="periods" type="number" value="4"><br><br>
+
+  <button onclick="generate()">Generate Timetable</button>
+
+  <div id="table"></div>
+<script>
+function generate() {
+  const data = {
+    subjects: document.getElementById("subjects").value
+      .split(",")
+      .map(s => s.trim()),
+    periods_per_day: parseInt(document.getElementById("periods").value)
+  };
+
+  fetch("http://127.0.0.1:5000/api/timetable", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("table").innerText =
+      JSON.stringify(data, null, 2);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Failed to load timetable");
+  });
+}
+</script>
+</body>
+</html>
