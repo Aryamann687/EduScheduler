@@ -3,40 +3,61 @@
 <head>
   <title>EduScheduler</title>
   <style>
-    table {
-      border-collapse: collapse;
-      margin-top: 20px;
-      width: 100%;
-    }
-    th, td {
-      border: 1px solid #333;
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background: #f0f0f0;
-    }
+    body { font-family: Arial; padding: 20px; }
+    textarea, input, button { width: 320px; padding: 6px; margin-top: 6px; }
+    button { background: #2b7cff; color: white; border: none; cursor: pointer; }
+    table { border-collapse: collapse; margin-top: 20px; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+    th { background: #f0f0f0; }
+    .free { color: red; font-weight: bold; }
   </style>
 </head>
 
 <body>
-  <h2>EduScheduler – Input</h2>
 
-  <label>Subjects (comma separated)</label><br>
-  <input id="subjects" placeholder="Math,Physics,CS,Chemistry"><br><br>
+<h2>EduScheduler</h2>
 
-  <label>Periods per day</label><br>
-  <input id="periods" type="number" value="4"><br><br>
+<label>Subjects & Teachers</label><br>
+<textarea id="subjectTeachers" placeholder="Math:Mr Rao
+Physics:Ms Sharma
+CS:Mr Patel
+English:Ms Verma"></textarea><br><br>
 
-  <button onclick="generate()">Generate Timetable</button>
+<label>Subject Weekly Limits</label><br>
+<textarea id="subjectLimits" placeholder="Math:4
+Physics:4
+CS:3
+English:4"></textarea><br><br>
 
-  <div id="table"></div>
+<label>Periods per day</label><br>
+<input id="periods" type="number" value="4"><br><br>
+
+<button onclick="generate()">Generate Timetable</button>
+
+<div id="timetable"></div>
+<div id="summary"></div>
+
 <script>
 function generate() {
+  const subject_teachers = {};
+  document.getElementById("subjectTeachers").value
+    .split("\n").map(l => l.trim()).filter(Boolean)
+    .forEach(line => {
+      const [s, t] = line.split(":").map(x => x.trim());
+      subject_teachers[s] = t;
+    });
+
+  const subject_weekly_limits = {};
+  document.getElementById("subjectLimits").value
+    .split("\n").map(l => l.trim()).filter(Boolean)
+    .forEach(line => {
+      const [s, c] = line.split(":").map(x => x.trim());
+      subject_weekly_limits[s] = parseInt(c);
+    });
+
   const data = {
-    subjects: document.getElementById("subjects").value
-      .split(",")
-      .map(s => s.trim()),
+    subject_teachers,
+    subject_weekly_limits,
     periods_per_day: parseInt(document.getElementById("periods").value)
   };
 
@@ -47,14 +68,56 @@ function generate() {
   })
   .then(res => res.json())
   .then(data => {
-    document.getElementById("table").innerText =
-      JSON.stringify(data, null, 2);
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Failed to load timetable");
+    if (data.error) {
+      alert(data.error + "\n" + (data.reason || ""));
+      return;
+    }
+    renderTable(data.timetable);
+    renderSummary(data.summary);
   });
 }
+
+function renderTable(timetable) {
+  const days = Object.keys(timetable);
+  const periods = Object.keys(timetable[days[0]]);
+
+  let html = "<h3>📅 Timetable</h3><table><tr><th>Day</th>";
+  periods.forEach(p => html += `<th>${p}</th>`);
+  html += "</tr>";
+
+  days.forEach(day => {
+    html += `<tr><th>${day}</th>`;
+    periods.forEach(p => {
+      const cell = timetable[day][p];
+      html += cell === "FREE"
+        ? `<td class="free">FREE</td>`
+        : `<td><b>${cell.subject}</b><br><small>${cell.teacher}</small></td>`;
+    });
+    html += "</tr>";
+  });
+
+  html += "</table>";
+  document.getElementById("timetable").innerHTML = html;
+}
+
+function renderSummary(summary) {
+  let html = "<h3>📊 Summary</h3>";
+
+  html += "<h4>👨‍🏫 Teacher – Classes per Week</h4><ul>";
+  for (let t in summary.teacher_per_week) {
+    html += `<li>${t}: ${summary.teacher_per_week[t]}</li>`;
+  }
+  html += "</ul>";
+
+  html += "<h4>📘 Subject – Classes per Week</h4><ul>";
+  for (let s in summary.subject_per_week) {
+    html += `<li>${s}: ${summary.subject_per_week[s]}</li>`;
+  }
+  html += "</ul>";
+
+  document.getElementById("summary").innerHTML = html;
+}
 </script>
+
 </body>
 </html>
