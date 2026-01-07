@@ -1,18 +1,16 @@
-import random
+import random  # Fixed case sensitivity
 
 def generate_timetable(data):
-    subject_teachers = data.get("subject_teachers", {})
-    subject_weekly_limits = data.get("subject_weekly_limits", {})
-    periods_per_day = data.get("periods_per_day", 4)
+    # Ensure data is parsed correctly; frontend might send strings instead of ints
+    try:
+        subject_teachers = data.get("subject_teachers", {})
+        subject_weekly_limits = {k: int(v) for k, v in data.get("subject_weekly_limits", {}).items()}
+        periods_per_day = int(data.get("periods_per_day", 4))
+    except (ValueError, TypeError) as e:
+        return {"error": "Invalid data format", "reason": str(e)}
 
     if not subject_teachers:
         return {"error": "No subjects/teachers provided"}
-
-    if not subject_weekly_limits:
-        return {
-            "error": "Subjects weekly limits missing",
-            "reason": "Please enter weekly class count for each subject"
-        }
 
     subjects = list(subject_teachers.keys())
     days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
@@ -24,12 +22,11 @@ def generate_timetable(data):
     if required_classes > total_slots:
         return {
             "error": "Constraints impossible",
-            "reason": "Total required classes exceed available slots"
+            "reason": f"Required ({required_classes}) exceeds available ({total_slots})"
         }
 
     timetable = {}
     remaining = subject_weekly_limits.copy()
-
     teacher_week_count = {}
     subject_week_count = {}
 
@@ -38,17 +35,19 @@ def generate_timetable(data):
         used_today = set()
 
         for p in periods:
+            # Check which subjects still need classes and haven't been taught today
             valid = [
                 s for s in subjects
                 if remaining.get(s, 0) > 0 and s not in used_today
             ]
 
             if not valid:
-                timetable[day][p] = "FREE"
+                timetable[day][p] = {"subject": "FREE", "teacher": "-"}
                 continue
 
-            subject = random.choice(valid)
-            teacher = subject_teachers[subject]
+            # Pick subject with most remaining classes to balance the load
+            subject = max(valid, key=lambda s: remaining[s])
+            teacher = subject_teachers.get(subject, "Unknown")
 
             timetable[day][p] = {
                 "subject": subject,
