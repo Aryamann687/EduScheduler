@@ -11,9 +11,16 @@ def home():
 
 @app.route("/api/timetable", methods=["POST"])
 def timetable():
-    data = request.get_json()
-    result = generate_timetable(data)
-    return jsonify(result)
+    try:
+        data = request.get_json()
+        result = generate_timetable(data)
+        return jsonify(result)
+    except Exception as e:
+        print("❌ BACKEND ERROR:", e)   # <<< THIS
+        return jsonify({
+            "error": "Internal server error",
+            "reason": str(e)
+        }), 500
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
