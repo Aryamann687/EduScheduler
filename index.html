@@ -1,16 +1,70 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html>
 <head>
   <title>EduScheduler</title>
   <style>
-    body { font-family: Arial; padding: 20px; }
-    textarea, input, button { width: 320px; padding: 6px; margin-top: 6px; }
-    button { background: #2b7cff; color: white; border: none; cursor: pointer; }
-    table { border-collapse: collapse; margin-top: 20px; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-    th { background: #f0f0f0; }
-    .free { color: red; font-weight: bold; }
-  </style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f7fb;
+  padding: 20px;
+}
+
+h2 {
+  margin-bottom: 10px;
+}
+
+.card {
+  background: white;
+  padding: 16px;
+  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+textarea, input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+}
+
+button {
+  margin-top: 12px;
+  padding: 10px;
+  width: 100%;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+
+th {
+  background: #f1f5f9;
+}
+
+.free {
+  background: #fee2e2;
+  color: #b91c1c;
+  font-weight: bold;
+}
+</style>
 </head>
 
 <body>
@@ -18,27 +72,33 @@
 <h2>EduScheduler</h2>
 
 <label>Subjects & Teachers</label><br>
-<textarea id="subjectTeachers" placeholder="Math:Mr Rao
+<textarea id="subjectTeachers" rows="4"
+placeholder="Math:Mr Rao
 Physics:Ms Sharma
 CS:Mr Patel
 English:Ms Verma"></textarea><br><br>
 
 <label>Subject Weekly Limits</label><br>
-<textarea id="subjectLimits" placeholder="Math:4
+<textarea id="subjectLimits" rows="4"
+placeholder="Math:4
 Physics:4
 CS:3
 English:4"></textarea><br><br>
 
+
 <label>Periods per day</label><br>
 <input id="periods" type="number" value="4"><br><br>
 
-<button onclick="generate()">Generate Timetable</button>
+<button type="button" onclick="generate()">Generate Timetable</button>
+
 
 <div id="timetable"></div>
 <div id="summary"></div>
 
 <script>
 function generate() {
+  console.log("Generate clicked"); // debug
+
   const subject_teachers = {};
   document.getElementById("subjectTeachers").value
     .split("\n").map(l => l.trim()).filter(Boolean)
@@ -58,7 +118,7 @@ function generate() {
   const data = {
     subject_teachers,
     subject_weekly_limits,
-    periods_per_day: parseInt(document.getElementById("periods").value)
+    periods_per_day: 4
   };
 
   fetch("http://127.0.0.1:5000/api/timetable", {
@@ -73,51 +133,12 @@ function generate() {
       return;
     }
     renderTable(data.timetable);
-    renderSummary(data.summary);
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Backend error");
   });
-}
-
-function renderTable(timetable) {
-  const days = Object.keys(timetable);
-  const periods = Object.keys(timetable[days[0]]);
-
-  let html = "<h3>📅 Timetable</h3><table><tr><th>Day</th>";
-  periods.forEach(p => html += `<th>${p}</th>`);
-  html += "</tr>";
-
-  days.forEach(day => {
-    html += `<tr><th>${day}</th>`;
-    periods.forEach(p => {
-      const cell = timetable[day][p];
-      html += cell === "FREE"
-        ? `<td class="free">FREE</td>`
-        : `<td><b>${cell.subject}</b><br><small>${cell.teacher}</small></td>`;
-    });
-    html += "</tr>";
-  });
-
-  html += "</table>";
-  document.getElementById("timetable").innerHTML = html;
-}
-
-function renderSummary(summary) {
-  let html = "<h3>📊 Summary</h3>";
-
-  html += "<h4>👨‍🏫 Teacher – Classes per Week</h4><ul>";
-  for (let t in summary.teacher_per_week) {
-    html += `<li>${t}: ${summary.teacher_per_week[t]}</li>`;
-  }
-  html += "</ul>";
-
-  html += "<h4>📘 Subject – Classes per Week</h4><ul>";
-  for (let s in summary.subject_per_week) {
-    html += `<li>${s}: ${summary.subject_per_week[s]}</li>`;
-  }
-  html += "</ul>";
-
-  document.getElementById("summary").innerHTML = html;
 }
 </script>
-
 </body>
 </html>
