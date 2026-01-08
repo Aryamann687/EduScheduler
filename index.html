@@ -1,144 +1,215 @@
-  <!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>EduScheduler</title>
-  <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f5f7fb;
-  padding: 20px;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduScheduler Pro - Labs & Fixed Slots</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --primary: #2563eb; --secondary: #059669; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); padding: 20px; line-height: 1.5; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card { background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { margin-top: 0; color: var(--primary); font-size: 1.5rem; }
+        label { display: block; margin-top: 15px; font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; }
+        textarea, input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .button-group { margin-top: 20px; display: flex; gap: 10px; }
+        button { border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-gen { background: var(--primary); color: white; }
+        .btn-pdf { background: var(--secondary); color: white; display: none; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; }
+        th, td { border: 1px solid #e2e8f0; padding: 15px; text-align: center; }
+        th { background-color: #f1f5f9; font-weight: 700; }
+        .subject-name { font-weight: 700; color: var(--primary); display: block; }
+        .teacher-name { font-size: 0.8rem; color: #64748b; }
+        .lab-tag { color: #d97706; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; }
+        .fixed-tag { border-left: 4px solid #ef4444; background: #fef2f2; }
+        /* Add this to your existing CSS */
+@media print {
+    #resultArea, #timetableOutput, table {
+        width: 100%;
+        height: auto !important;
+        overflow: visible !important;
+        display: block !important;
+    }
 }
 
-h2 {
-  margin-bottom: 10px;
+#resultArea {
+    /* Ensure there's no fixed height during capture */
+    min-height: fit-content;
 }
 
-.card {
-  background: white;
-  padding: 16px;
-  margin-top: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-}
-
-textarea, input {
-  width: 100%;
-  padding: 8px;
-  margin-top: 6px;
-}
-
-button {
-  margin-top: 12px;
-  padding: 10px;
-  width: 100%;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 15px;
-}
-
-button:hover {
-  background: #1d4ed8;
-}
-
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-top: 10px;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
-}
-
-th {
-  background: #f1f5f9;
-}
-
-.free {
-  background: #fee2e2;
-  color: #b91c1c;
-  font-weight: bold;
-}
-</style>
+    </style>
 </head>
-
 <body>
 
-<h2>EduScheduler</h2>
+<div class="container">
+    <div class="card">
+        <h2>EduScheduler Configuration</h2>
+        
+        <div class="grid-inputs">
+            <div>
+                <label>Subjects & Teachers (Subject:Teacher)</label>
+                <textarea id="subjectTeachers" placeholder="Math:Mr. Rao&#10;Physics Lab:Dr. Stone"></textarea>
+            </div>
+            <div>
+                <label>Weekly Class Limits (Subject:Total_Periods)</label>
+                <textarea id="subjectLimits" placeholder="Math:5&#10;Physics Lab:4"></textarea>
+            </div>
+        </div>
 
-<label>Subjects & Teachers</label><br>
-<textarea id="subjectTeachers" rows="4"
-placeholder="Math:Mr Rao
-Physics:Ms Sharma
-CS:Mr Patel
-English:Ms Verma"></textarea><br><br>
+        <div class="grid-inputs">
+            <div>
+                <label>Lab Subjects (Comma separated)</label>
+                <input type="text" id="labSubjects" placeholder="Physics Lab, CS Lab">
+            </div>
+            <div>
+                <label>Fixed Slots (Day:Period:Subject)</label>
+                <textarea id="fixedSlots" placeholder="Monday:P1:Math&#10;Wednesday:P3:Physics Lab" style="height: 60px;"></textarea>
+            </div>
+        </div>
 
-<label>Subject Weekly Limits</label><br>
-<textarea id="subjectLimits" rows="4"
-placeholder="Math:4
-Physics:4
-CS:3
-English:4"></textarea><br><br>
+        <div class="grid-inputs" style="margin-top: 10px;">
+            <div>
+                <label>Periods Per Day</label>
+                <input type="number" id="periods" value="4" min="1" max="8">
+            </div>
+            <div>
+                <label>Teacher Daily Limit (Max classes/day)</label>
+                <input type="number" id="teacherLimit" value="3" min="1">
+            </div>
+        </div>
 
+        <div class="button-group">
+            <button class="btn-gen" onclick="generate()">Generate Timetable</button>
+            <button id="pdfBtn" class="btn-pdf" onclick="exportPDF()">Export as PDF</button>
+        </div>
+    </div>
 
-<label>Periods per day</label><br>
-<input id="periods" type="number" value="4"><br><br>
-
-<button type="button" onclick="generate()">Generate Timetable</button>
-
-
-<div id="timetable"></div>
-<div id="summary"></div>
+    <div id="resultArea" style="display: none;">
+        <div class="card">
+            <h2 id="tableTitle">Generated Timetable</h2>
+            <div id="timetableOutput"></div>
+        </div>
+    </div>
+</div>
 
 <script>
+let lastPayload = null;
+
 function generate() {
-  console.log("Generate clicked"); // debug
-
-  const subject_teachers = {};
-  document.getElementById("subjectTeachers").value
-    .split("\n").map(l => l.trim()).filter(Boolean)
-    .forEach(line => {
-      const [s, t] = line.split(":").map(x => x.trim());
-      subject_teachers[s] = t;
+    const subject_teachers = {};
+    document.getElementById("subjectTeachers").value.split("\n").filter(Boolean).forEach(line => {
+        const [s, t] = line.split(":").map(x => x.trim());
+        if(s && t) subject_teachers[s] = t;
     });
 
-  const subject_weekly_limits = {};
-  document.getElementById("subjectLimits").value
-    .split("\n").map(l => l.trim()).filter(Boolean)
-    .forEach(line => {
-      const [s, c] = line.split(":").map(x => x.trim());
-      subject_weekly_limits[s] = parseInt(c);
+    const subject_weekly_limits = {};
+    document.getElementById("subjectLimits").value.split("\n").filter(Boolean).forEach(line => {
+        const [s, c] = line.split(":").map(x => x.trim());
+        if(s && c) subject_weekly_limits[s] = parseInt(c);
     });
 
-  const data = {
-    subject_teachers,
-    subject_weekly_limits,
-    periods_per_day: 4
-  };
+    const lab_subjects = document.getElementById("labSubjects").value.split(",").map(s => s.trim()).filter(Boolean);
 
-  fetch("http://127.0.0.1:5000/api/timetable", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.error) {
-      alert(data.error + "\n" + (data.reason || ""));
-      return;
-    }
-    renderTable(data.timetable);
-  })
-  .catch(err => {
-    console.error(err);
-    alert("Backend error");
-  });
+    const fixed_slots = [];
+    document.getElementById("fixedSlots").value.split("\n").filter(Boolean).forEach(line => {
+        const parts = line.split(":").map(x => x.trim());
+        if(parts.length === 3) fixed_slots.push({day: parts[0], period: parts[1], subject: parts[2]});
+    });
+
+    lastPayload = {
+        subject_teachers,
+        subject_weekly_limits,
+        lab_subjects,
+        fixed_slots,
+        periods_per_day: parseInt(document.getElementById("periods").value),
+        teacher_daily_limit: parseInt(document.getElementById("teacherLimit").value)
+    };
+
+    fetch("http://127.0.0.1:5000/api/timetable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lastPayload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error + ": " + data.reason);
+            return;
+        }
+        document.getElementById("resultArea").style.display = "block";
+        document.getElementById("pdfBtn").style.display = "inline-block";
+        renderTable(data.timetable);
+    })
+    .catch(err => alert("Backend is offline or Error: " + err));
 }
+
+function renderTable(timetable) {
+    const output = document.getElementById("timetableOutput");
+    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const periodCount = parseInt(document.getElementById("periods").value);
+    
+    let html = `<table><tr><th>Day / Period</th>`;
+    for(let i=1; i<=periodCount; i++) html += `<th>P${i}</th>`;
+    html += `</tr>`;
+
+    days.forEach(day => {
+        html += `<tr><td><b>${day}</b></td>`;
+        for(let i=1; i<=periodCount; i++) {
+            const cell = timetable[day][`P${i}`];
+            const isFree = !cell || cell.subject === "FREE";
+            
+            if (isFree) {
+                html += `<td><span style="color:#cbd5e1">Free</span></td>`;
+            } else {
+                const isLab = cell.subject.includes("(Lab)");
+                html += `<td>
+                    <span class="subject-name">${cell.subject}</span>
+                    <span class="teacher-name">${cell.teacher}</span>
+                    ${isLab ? '<br><span class="lab-tag">Double Period</span>' : ''}
+                </td>`;
+            }
+        }
+        html += `</tr>`;
+    });
+    html += `</table>`;
+    output.innerHTML = html;
+}
+
+function exportPDF() {
+    const element = document.getElementById('resultArea');
+    
+    // Check if the element exists and is visible
+    if (!element || element.style.display === "none") {
+        alert("Please generate a timetable first!");
+        return;
+    }
+
+    const opt = {
+        margin: [10, 10, 10, 10], // top, left, bottom, right
+        filename: 'EduScheduler_Timetable.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            logging: true,
+            letterRendering: true 
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'landscape' // Best for wide timetables
+        }
+    };
+
+    // Use .from().set().save() pattern for better reliability
+    html2pdf().set(opt).from(element).save();
+}
+
 </script>
 </body>
 </html>
+
